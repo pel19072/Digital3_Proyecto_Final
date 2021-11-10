@@ -18,13 +18,27 @@
 // Prototypes
 void Handler_1(void);
 
+// Gloabl Variables
+int FLAG = 0;
+
 int main(int argc, char *argv[]){
   //Setup necesario
   wiringPiSetup();
-  pinMode();
-  int wiringPiISR(int pin, INT_EDGE_BOTH,  void (*Handler_1)(void));
+  pinMode(25, INPUT); // Botón
+  wiringPiISR(25, INT_EDGE_BOTH, *Handler_1);
 
   while(1){
   }
   return 0;
+}
+
+void Handler_1(void){
+  if(digitalRead(25) == 1){
+    FLAG = 1;
+  }
+  else{
+    if(FLAG){
+      printf("Hola, prueba de interrupt\n");
+    }
+  }
 }
