@@ -25,7 +25,7 @@ int main(int argc, char *argv[]){
   //Setup necesario
   wiringPiSetup();
   pinMode(25, INPUT); // Botón
-  wiringPiISR(25, INT_EDGE_BOTH, *Handler_1);
+  wiringPiISR(25, INT_EDGE_BOTH, (void *)&Handler_1);
 
   while(1){
   }
