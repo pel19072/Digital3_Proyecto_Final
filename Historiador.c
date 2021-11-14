@@ -54,7 +54,7 @@ int boolval = 1;	// for a socket option
 
 int main(int argc, char *argv[]){
   /******************************** Variables *********************************/
-  // Interprocesos
+  // Interprocesos e interhilos
 	int pipe_CtoPy;		// for file descriptors
   int dummy;        // Para creación de FIFOs en terminal
 	int length;
@@ -119,16 +119,24 @@ int main(int argc, char *argv[]){
 void Manual_CMD(void *ptr){
   // Aquí hay un envío de datos a través de UDP con los RTUs y se guarda
   // en los buffers.
-	******************************** Variables *********************************
+	/******************************** Variables *********************************/
 	char cmd[MSG_SIZE] = "Prueba";
+	char decision[4] = "no\n";
 	int length;
 	length = (int)ptr;
-
-	n = sendto(sockfd, cmd, MSG_SIZE, 0,
-					(struct sockaddr *)&addr, length);
-	if(n < 0){
-		error("sendto");
+	while(1){
+		fflush(stdout);
+		printf("Desea enviar un comando manual?(yes/no)");
+		scanf("%s", decision);
+		printf("Su decision fue %s\n", decision);
+		if(strcmp(decision, "yes") == 0){
+			n = sendto(sockfd, cmd, MSG_SIZE, 0,
+							(struct sockaddr *)&addr, length);
+			if(n < 0){
+				error("sendto");
+			}
+			printf("se envio un dato\n");
+		}
 	}
-	printf("Yo soy el master\n\n");
 	pthread_exit(0);
 }
