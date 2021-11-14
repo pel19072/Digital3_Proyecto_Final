@@ -120,7 +120,7 @@ void Manual_CMD(void *ptr){
   // Aquí hay un envío de datos a través de UDP con los RTUs y se guarda
   // en los buffers.
 	/******************************** Variables *********************************/
-	char cmd[MSG_SIZE] = "Prueba";
+	char cmd[MSG_SIZE] = "Prueba\n";
 	char decision[4] = "no\n";
 	int length;
 	length = (int)ptr;

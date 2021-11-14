@@ -131,7 +131,7 @@ int main(int argc, char *argv[]) {
     char mensaje[4] = "hola";
     addr.sin_addr.s_addr = inet_addr("192.168.0.110");
     while(1){
-        n = sendto(sockfd,mensaje, MSG_SIZE, 0, (struct sockaddr *)&addr,length); //se envia el mensaje
+        n = sendto(sockfd,"hola", MSG_SIZE, 0, (struct sockaddr *)&addr,length); //se envia el mensaje
             if(n < 0)
                 error("sendto");
             printf("Estoy mandando\n");
