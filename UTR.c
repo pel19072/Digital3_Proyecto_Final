@@ -19,14 +19,15 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <time.h>
+#include <sys/time.h>
 
 #define SPI_CHANNEL      0 // Canal SPI de la Raspberry Pi, 0 ó 1
 #define SPI_SPEED  1500000 // Velocidad de la comunicación SPI (reloj, en HZ)
                             // Máxima de 3.6 MHz con VDD = 5V, 1.2 MHz con VDD = 2.7V
 #define ADC_CHANNEL       0 // Canal A/D del MCP3002 a usar, 0 ó 1
-#define  MSG_SIZE 40
+#define  MSG_SIZE 80
 //**************************Variables globales*****************************
-int debounce, debounce1, var = 0;
+int debounce, debounce1, var, b1, b2, sw1, sw2 = 0;
 uint16_t ADCvalue;
 unsigned int length;
 int sockfd, n,  perder = 0;
@@ -38,6 +39,7 @@ char* tok;
 int save_ip, save_ip1, save_ip2, save_ip3 = 0;
 int boolval = 1;			// for a socket option
 int revision[3];
+char reporte[MSG_SIZE];
 struct sockaddr_in server, addr;// to store received messages or messages to be sent.
 //*******************prototipos de funciones*********************************
 void handlerb1 (void);
@@ -128,14 +130,24 @@ int main(int argc, char *argv[]) {
     pthread_create(&thread3, NULL, (void*)&ADC_read, NULL); //funcion para crear el hilo
     pthread_create(&thread4, NULL, (void*)&recibir, NULL); //funcion para crear el hilo
 
-    char mensaje[4] = "hola";
+
     addr.sin_addr.s_addr = inet_addr("192.168.0.110");
+
+    //estructura para adquirir la hora
+    struct timeval current_time;
+    float adc = 0;
     while(1){
-        n = sendto(sockfd,"hola", MSG_SIZE, 0, (struct sockaddr *)&addr,length); //se envia el mensaje
-            if(n < 0)
-                error("sendto");
-            printf("Estoy mandando\n");
-        sleep(1);
+    gettimeofday(&current_time, NULL);
+    sprintf(reporte,"1,%d,%d,%d,%d,%d,%d\n", current_time.tv_sec,b1,b2,sw1,sw2,ADCvalue);
+    n = sendto(sockfd,reporte, MSG_SIZE, 0, (struct sockaddr *)&addr,length); //se envia el mensaje
+        if(n < 0)
+            error("sendto");
+    printf("%s\n",reporte);
+    b1 = 0;
+    b2 = 0;
+    sw1 = 0;
+    sw2 = 0;
+    sleep(2);
     }
 	return(0);
 }
@@ -146,8 +158,7 @@ void handlerb1 (void){
     }else{
         if (debounce == 1){
             debounce = 0;
-            printf("entre a la interrupcion\n");
-            fflush(stdout);
+            b1=1;
         }
     }
 }
@@ -157,29 +168,24 @@ void handlerb2 (void){
     }else{
         if (debounce1 == 1){
             debounce1 = 0;
-            printf("entre a la interrupcion b2\n");
-            fflush(stdout);
+            b2 = 1;
         }
     }
 }
 void handlers1 (void){
     usleep(100000);
     if (digitalRead (20) == 1){
-        printf("switch 1 paso de 0 a 1\n");
-        fflush(stdout);
+        sw1 = 1;
     }else{
-            printf("switch 1 paso de 1 a 0\n");
-            fflush(stdout);
+        sw1 = 2;
     }
 }
 void handlers2 (void){
     usleep(100000);
     if (digitalRead (21) == 1){
-        printf("switch 2 paso de 0 a 1\n");
-        fflush(stdout);
+    sw2 = 1;
     }else{
-            printf("switch 2 paso de 1 a 0\n");
-            fflush(stdout);
+    sw2 = 2;
     }
 }
 uint16_t get_ADC(int ADC_chan){
@@ -205,17 +211,11 @@ void alarma (void *ptr){
     while (1){
     adc =( (ADCvalue*3.3)/1023);
         if ((ADCvalue >= 155) && (ADCvalue<=775)){
-            /*
             PWM_off(18);
-            printf("alarma no sonando y el voltaje: %f\n", adc);
-            fflush(stdout);
-            */
         }else{
-            /*
+
             PWM(18,0.11944575,0.11944575);
-            printf("alarma  sonando y el voltaje: %f\n", adc);
-            fflush(stdout);
-            */
+
         }
     }
 }
