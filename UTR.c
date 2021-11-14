@@ -28,6 +28,7 @@
 #define  MSG_SIZE 80
 //**************************Variables globales*****************************
 int debounce, debounce1, var, b1, b2, sw1, sw2 = 0;
+int UTR_identifier = 1;
 uint16_t ADCvalue;
 unsigned int length;
 int sockfd, n,  perder = 0;
@@ -138,7 +139,7 @@ int main(int argc, char *argv[]) {
     float adc = 0;
     while(1){
     gettimeofday(&current_time, NULL);
-    sprintf(reporte,"1,%d,%d,%d,%d,%d,%d\n", current_time.tv_sec,b1,b2,sw1,sw2,ADCvalue);
+    sprintf(reporte,"%d,%d,%d,%d,%d,%d,%d\n", UTR_identifier,current_time.tv_sec,b1,b2,sw1,sw2,ADCvalue);
     n = sendto(sockfd,reporte, MSG_SIZE, 0, (struct sockaddr *)&addr,length); //se envia el mensaje
         if(n < 0)
             error("sendto");

@@ -1,11 +1,11 @@
 import os
 import sys
+import time
 import errno
 import struct
-
+import re
 
 FIFO = 'CtoPy'
-mensajes = []
 mensaje = ''
 
 def secs_to_time(seconds):
@@ -34,7 +34,10 @@ with open(FIFO, "rb") as fifo:
 
             mensaje += struct.unpack("=s", data)[0].decode("utf-8")
             if '\n' in mensaje:
-                print(mensaje)
+                display = mensaje.split(",")
+                display[0] = display[0][-1]
+                display[1] = time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.localtime(int(display[1])))
+                print(display[1])
                 mensaje = ''
         except:
             sys.exit("Hubo un error en la recepcion de datos\n")
