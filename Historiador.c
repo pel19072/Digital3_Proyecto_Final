@@ -46,9 +46,10 @@ void Manual_CMD(void *ptr); // Para envío manual de comandos
 sem_t my_semaphore;
 // UDP
 int sockfd, n;
-struct sockaddr_in server, addr;
+struct sockaddr_in server, addr, addr1, addr2;
 char buffer_RX[MSG_SIZE], buffer_TX[MSG_SIZE];	// to store received messages or messages to be sent.
 int boolval = 1;	// for a socket option
+int length;
 
 
 
@@ -74,11 +75,19 @@ int main(int argc, char *argv[]){
 	}
 	server.sin_family = AF_INET;							// symbol constant for Internet domain
 	server.sin_port = htons(atoi(argv[1]));		// port number
-	server.sin_addr.s_addr = htonl(INADDR_ANY);
+	server.sin_addr.s_addr = htonl(INADDR_ANY); //inet_addr("192.168.1.255");
 
 	addr.sin_family = AF_INET;							// symbol constant for Internet domain
 	addr.sin_port = htons(atoi(argv[1]));		// port number
 	addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+  addr1.sin_family = AF_INET;							// symbol constant for Internet domain
+	addr1.sin_port = htons(atoi(argv[1]));		// port number
+	addr1.sin_addr.s_addr = inet_addr("192.168.1.26");
+
+  addr2.sin_family = AF_INET;							// symbol constant for Internet domain
+	addr2.sin_port = htons(atoi(argv[1]));		// port number
+	addr2.sin_addr.s_addr = inet_addr("192.168.1.26");
 
 	length = sizeof(server);									// size of structure
 	// binds the socket to the address of the host and the port number
@@ -88,7 +97,7 @@ int main(int argc, char *argv[]){
 	if(setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &boolval, sizeof(boolval)) < 0)
    		error("Error setting socket options\n");
 	/******************************* Threads ************************************/
-  pthread_create(&threads[0], NULL, (void*)&Manual_CMD, (void *)length);
+  pthread_create(&threads[0], NULL, (void*)&Manual_CMD, NULL);
 	/******************************* Named Pipes ********************************/
 	if((pipe_CtoPy = open("CtoPy", O_WRONLY)) < 0){
 		printf("pipe CtoPy error\n");
@@ -122,8 +131,6 @@ void Manual_CMD(void *ptr){
 	/******************************** Variables *********************************/
 	char cmd[MSG_SIZE] = "Prueba\n";
 	char decision[4] = "no\n";
-	int length;
-	length = (int)ptr;
 	while(1){
 		fflush(stdout);
 		printf("Desea enviar un comando manual?(yes/no)");
@@ -131,7 +138,7 @@ void Manual_CMD(void *ptr){
 		printf("Su decision fue %s\n", decision);
 		if(strcmp(decision, "yes") == 0){
 			n = sendto(sockfd, cmd, MSG_SIZE, 0,
-							(struct sockaddr *)&addr, length);
+							(struct sockaddr *)&addr1, length);
 			if(n < 0){
 				error("sendto");
 			}

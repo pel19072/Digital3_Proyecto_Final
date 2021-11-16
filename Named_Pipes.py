@@ -8,14 +8,6 @@ import re
 FIFO = 'CtoPy'
 mensaje = ''
 
-def secs_to_time(seconds):
-    hours = seconds//3600
-    resting_seconds = seconds % 3600
-    minutes = resting_seconds//60
-    resting_seconds = seconds % 60
-    message = "{}:{}:{}".format(str(hours), str(minutes), str(resting_seconds))
-    return message
-
 try:
     os.mkfifo(FIFO)
 except OSError as oe:

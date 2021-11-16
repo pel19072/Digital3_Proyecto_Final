@@ -154,7 +154,7 @@ int main(int argc, char *argv[]) {
     pthread_create(&thread4, NULL, (void*)&recibir, NULL); //funcion para crear el hilo
     pthread_create(&thread4, NULL, (void*)&comp_adc, NULL); //funcion para crear el hilo
 
-    addr.sin_addr.s_addr = inet_addr("192.168.0.110");
+    addr.sin_addr.s_addr = inet_addr("192.168.1.28");
 
     //estructura para adquirir la hora
 
@@ -164,7 +164,7 @@ int main(int argc, char *argv[]) {
     if (evento  == 0){
     //sem_wait(&semapore);
     gettimeofday(&current_time, NULL);
-    hora = (current_time.tv_sec + (current_time.tv_usec/1000000));
+    hora = (float)current_time.tv_sec + (float)(current_time.tv_usec)/1000000;
     adc =( (ADCvalue*3.3)/1023);
     sprintf(reporte[c_mensajes],"%d,%d,%f,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,hora,b1,b2,sw1,sw2,val[1],val[0],adc);
     //printf("No sucedio nada: %s\n",reporte[c_mensajes]);
