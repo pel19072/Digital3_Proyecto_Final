@@ -28,6 +28,14 @@
 #define  MSG_SIZE 80
 //**************************Variables globales*****************************
 int debounce, debounce1, var, b1, b2, sw1, sw2 = 0;
+int sw3 = 0;
+int ADC_warning= 0;
+int ADC_good=0;
+int evento = 0;
+float adc = 0;
+int val[2];
+float hora = 0;
+int c_mensajes = 0;
 int UTR_identifier = 1;
 uint16_t ADCvalue;
 unsigned int length;
@@ -40,8 +48,9 @@ char* tok;
 int save_ip, save_ip1, save_ip2, save_ip3 = 0;
 int boolval = 1;			// for a socket option
 int revision[3];
-char reporte[MSG_SIZE];
+char reporte[MSG_SIZE][100];
 struct sockaddr_in server, addr;// to store received messages or messages to be sent.
+struct timeval current_time;
 //*******************prototipos de funciones*********************************
 void handlerb1 (void);
 void handlerb2 (void);
@@ -54,11 +63,13 @@ void PWM_off (int pin);
 void error(const char *msg);
 void ADC_read (void *ptr);
 void recibir (void *ptr);
+void iot(void);
+void comp_adc(void *ptr);
 //************************************Hilos***********************************
 
 //**********************************Main*************************************
 int main(int argc, char *argv[]) {
-    pthread_t thread2,thread3, thread4;//identificador de los hilos
+    pthread_t thread2,thread3, thread4, thread5;//identificador de los hilos
     //FILE *fp_final;
    // char ADC[4];
     //char cadena[1000][5];
@@ -70,14 +81,17 @@ int main(int argc, char *argv[]) {
     pinMode(18,OUTPUT); //pin para el boton como entrada
     pinMode(5,OUTPUT); //pin para el boton como entrada
     pinMode(6,OUTPUT); //pin para el boton como entrada
+    pinMode(12,INPUT); //pin para el boton como entrada
 	pullUpDnControl(26,PUD_DOWN); //pin del boton configurado en pulldown
     pullUpDnControl(20,PUD_DOWN); //pin del boton configurado en pulldown
     pullUpDnControl(21,PUD_DOWN); //pin del boton configurado en pulldown
     pullUpDnControl(19,PUD_DOWN); //pin del boton configurado en pulldown
+   //pullUpDnControl(27,PUD_DOWN); //pin del boton configurado en pulldown
     wiringPiISR (26, INT_EDGE_BOTH,  (void*) &handlerb1);
     wiringPiISR (19, INT_EDGE_BOTH,  (void*) &handlerb2);
     wiringPiISR (20, INT_EDGE_BOTH,  (void*) &handlers1);
     wiringPiISR (21, INT_EDGE_BOTH,  (void*) &handlers2);
+    //wiringPiISR (12, INT_EDGE_BOTH,  (void*) &iot);
     if(wiringPiSPISetup(SPI_CHANNEL, SPI_SPEED) < 0) {
     printf("wiringPiSPISetup falló.\n");
     return(-1);
@@ -130,24 +144,35 @@ int main(int argc, char *argv[]) {
     pthread_create(&thread2, NULL, (void*)&alarma, NULL); //funcion para crear el hilo
     pthread_create(&thread3, NULL, (void*)&ADC_read, NULL); //funcion para crear el hilo
     pthread_create(&thread4, NULL, (void*)&recibir, NULL); //funcion para crear el hilo
-
+    pthread_create(&thread4, NULL, (void*)&comp_adc, NULL); //funcion para crear el hilo
 
     addr.sin_addr.s_addr = inet_addr("192.168.0.110");
 
     //estructura para adquirir la hora
-    struct timeval current_time;
-    float adc = 0;
+
     while(1){
+    printf("%d\n", evento);
+    printf("%d\n", c_mensajes);
+    if (evento  == 0){
     gettimeofday(&current_time, NULL);
-    sprintf(reporte,"%d,%d,%d,%d,%d,%d,%d\n", UTR_identifier,current_time.tv_sec,b1,b2,sw1,sw2,ADCvalue);
-    n = sendto(sockfd,reporte, MSG_SIZE, 0, (struct sockaddr *)&addr,length); //se envia el mensaje
+    hora = (current_time.tv_sec + (current_time.tv_usec/1000000));
+    adc =( (ADCvalue*3.3)/1023);
+    sprintf(reporte[c_mensajes],"%d,%d,%f,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,hora,b1,b2,sw1,sw2,val[1],val[0],adc);
+    //printf("No sucedio nada: %s\n",reporte[c_mensajes]);
+    c_mensajes++;
+    }
+    for (int i = 0; i<c_mensajes ;i++){
+    //printf("llegue a enviar\n");
+    n = sendto(sockfd,reporte[i], 100, 0, (struct sockaddr *)&addr,length); //se envia el mensaje
         if(n < 0)
             error("sendto");
-    printf("%s\n",reporte);
-    b1 = 0;
-    b2 = 0;
-    sw1 = 0;
-    sw2 = 0;
+    printf("Hola: %s\n",reporte[i]);
+    }
+
+    memset(reporte, 0,100);	// se limpia el buffer de entrada
+    //printf("el reporte esta vacio: %s\n",reporte);
+    c_mensajes =0;
+    evento = 0;
     sleep(2);
     }
 	return(0);
@@ -160,6 +185,13 @@ void handlerb1 (void){
         if (debounce == 1){
             debounce = 0;
             b1=1;
+            evento = 2;
+            gettimeofday(&current_time, NULL);
+            hora = (current_time.tv_sec + (current_time.tv_usec/1000000));
+            adc =( (ADCvalue*3.3)/1023);
+            sprintf(reporte[c_mensajes],"%d,%d,%f,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,hora,b1,b2,sw1,sw2,sw3,val[1],val[0],adc);
+            c_mensajes++;
+            b1 = 0;
         }
     }
 }
@@ -170,6 +202,13 @@ void handlerb2 (void){
         if (debounce1 == 1){
             debounce1 = 0;
             b2 = 1;
+            evento = 2;
+            gettimeofday(&current_time, NULL);
+            hora = (current_time.tv_sec + (current_time.tv_usec/1000000));
+            adc =( (ADCvalue*3.3)/1023);
+            sprintf(reporte[c_mensajes],"%d,%d,%f,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,hora,b1,b2,sw1,sw2,sw3,val[1],val[0],adc);
+            c_mensajes++;
+            b2 = 0;
         }
     }
 }
@@ -178,16 +217,44 @@ void handlers1 (void){
     if (digitalRead (20) == 1){
         sw1 = 1;
     }else{
-        sw1 = 2;
+        sw1 = 0;
     }
+    evento = 1;
+    gettimeofday(&current_time, NULL);
+    hora = (current_time.tv_sec + (current_time.tv_usec/1000000));
+    adc =( (ADCvalue*3.3)/1023);
+    sprintf(reporte[c_mensajes],"%d,%d,%f,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,hora,b1,b2,sw1,sw2,sw3,val[1],val[0],adc);
+    c_mensajes++;
 }
 void handlers2 (void){
     usleep(100000);
     if (digitalRead (21) == 1){
     sw2 = 1;
     }else{
-    sw2 = 2;
+        sw2 = 0;
     }
+    evento = 1;
+    gettimeofday(&current_time, NULL);
+    hora = (current_time.tv_sec + (current_time.tv_usec/1000000));
+    adc =( (ADCvalue*3.3)/1023);
+    sprintf(reporte[c_mensajes],"%d,%d,%f,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,hora,b1,b2,sw1,sw2,sw3,val[1],val[0],adc);
+    c_mensajes++;
+}
+void iot(void){
+    usleep(100000);
+    if (digitalRead (27) == 1){
+    sw3 = 1;
+    }else{
+        sw3 = 0;
+    }
+    evento = 3;
+    gettimeofday(&current_time, NULL);
+    hora = (current_time.tv_sec + (current_time.tv_usec/1000000));
+    adc =( (ADCvalue*3.3)/1023);
+    sprintf(reporte[c_mensajes],"%d,%d,%f,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,hora,b1,b2,sw1,sw2,sw3,val[1],val[0],adc);
+    c_mensajes++;
+    printf("ando aca \n");
+    fflush(stdout);
 }
 uint16_t get_ADC(int ADC_chan){
 uint8_t spiData[2]; // La comunicación usa dos bytes
@@ -210,7 +277,6 @@ return(resultado);
 void alarma (void *ptr){
     float adc = 0;
     while (1){
-    adc =( (ADCvalue*3.3)/1023);
         if ((ADCvalue >= 155) && (ADCvalue<=775)){
             PWM_off(18);
         }else{
@@ -240,16 +306,11 @@ void PWM_off (int pin){//funcion para apagar el pin del PWM
 void ADC_read (void *ptr){
     while (1){
         ADCvalue = get_ADC(ADC_CHANNEL);
-        /*
-        printf("Valor de la conversión: %d\n", ADCvalue);
-        fflush(stdout);
-        */
         usleep(10000);
-
-
     }
 }
 void recibir (void *ptr){
+    char* toks;
     while (1){
     memset(buffer, 0,MSG_SIZE);	// se limpia el buffer de entrada
 		// receive from a client
@@ -259,8 +320,33 @@ void recibir (void *ptr){
     if (buffer != NULL){
         printf("Se recibio lo siguiente: %s\n", buffer);//se imprime lo que se recibio para ver si es correcto
         fflush(stdout);
-
-
+        toks = strtok(buffer, "."); //la variable que contiene la IP recibida la separa por puntos          //para acceder al ultimo numero de la IP y usarlo en el desempate
+        val[0] = atoi(toks);
+        toks = strtok(NULL, ".");
+        toks = strtok(NULL, ".");
+        val[1] = atoi(toks);
+        if (val[0] == 1){
+            if (val[1] == 1){
+                digitalWrite(5, HIGH);
+                digitalWrite(6, LOW);
+            }else if (val[1] == 2){
+                digitalWrite(6, HIGH);
+                digitalWrite(5, LOW);
+            }else if (val[1] == 3){
+                digitalWrite(5, HIGH);
+                digitalWrite(6, HIGH);
+            }else{
+                digitalWrite(5, LOW);
+                digitalWrite(6, LOW);
+        }
     }
+    evento = 4;
+    gettimeofday(&current_time, NULL);
+    hora = (current_time.tv_sec + (current_time.tv_usec/1000000));
+    adc =( (ADCvalue*3.3)/1023);
+    sprintf(reporte[c_mensajes],"%d,%d,%f,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,hora,b1,b2,sw1,sw2,sw3,val[1],val[0],adc);
+    c_mensajes++;
     }
 }
+}
+void comp_adc(void *ptr){
