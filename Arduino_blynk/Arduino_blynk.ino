@@ -43,8 +43,8 @@ char auth[] = "8f81bXH7dQDvsG9CVRmniRzZgG9Wumma";
 
 // Your WiFi credentials.
 // Set password to "" for open networks.
-char ssid[] = "UNE_F45A";
-char pass[] = "00002501207273";
+char ssid[] = "Pellecer";
+char pass[] = "PellecerOApto4";
 
 char estado =0;
 int state = 0;
