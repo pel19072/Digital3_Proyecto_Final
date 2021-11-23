@@ -28,30 +28,30 @@
 #define ADC_CHANNEL       0 // Canal A/D del MCP3002 a usar, 0 ó 1
 #define  MSG_SIZE 80
 //**************************Variables globales*****************************
-int debounce, debounce1, var, b1, b2, sw1, sw2 = 0;
+int debounce3 = 0;
+int debounce1 = 0;
+int debounce = 0;
+int b1 =0;
+int b2 = 0;
+int sw1 = 0;
+int sw2 = 0;
 int sw3 = 0;
-int ADC_warning= 0;
-int ADC_good=0;
 int evento = 0;
 float adc = 0;
-int val[2];
-float hora = 0;
+char* toks;
+int led[2];
 int c_mensajes = 0;
 int UTR_identifier = 1;
 uint16_t ADCvalue;
 unsigned int length;
-int sockfd, n,  perder = 0;
-char buffer[MSG_SIZE];
-char broad_ip[10];
+int sockfd, n= 0;
+char buffer[80];
 char* IP_adress;
-char copia_IP[1];
-char* tok;
-int save_ip, save_ip1, save_ip2, save_ip3 = 0;
 int boolval = 1;			// for a socket option
 int revision[3];
-char reporte[MSG_SIZE][100];
+char reporte[MSG_SIZE][200];
 sem_t semapore;
-struct sockaddr_in server, addr;// to store received messages or messages to be sent.
+struct sockaddr_in  server, addr;// to store received messages or messages to be sent.
 struct timeval current_time;
 //*******************prototipos de funciones*********************************
 void handlerb1 (void);
@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
 		param.sched_priority = 1;
         sched_setscheduler(0, SCHED_FIFO, &param);
     */
-    pthread_t thread2,thread3, thread4, thread5;//identificador de los hilos
+    pthread_t thread2,thread3, thread4, thread5, thread6;//identificador de los hilos
     //FILE *fp_final;
    // char ADC[4];
     //char cadena[1000][5];
@@ -93,12 +93,14 @@ int main(int argc, char *argv[]) {
     pullUpDnControl(20,PUD_DOWN); //pin del boton configurado en pulldown
     pullUpDnControl(21,PUD_DOWN); //pin del boton configurado en pulldown
     pullUpDnControl(19,PUD_DOWN); //pin del boton configurado en pulldown
-   //pullUpDnControl(27,PUD_DOWN); //pin del boton configurado en pulldown
     wiringPiISR (26, INT_EDGE_BOTH,  (void*) &handlerb1);
     wiringPiISR (19, INT_EDGE_BOTH,  (void*) &handlerb2);
     wiringPiISR (20, INT_EDGE_BOTH,  (void*) &handlers1);
     wiringPiISR (21, INT_EDGE_BOTH,  (void*) &handlers2);
-    //wiringPiISR (12, INT_EDGE_BOTH,  (void*) &iot);
+    wiringPiISR (12, INT_EDGE_BOTH,  (void*) &iot);
+
+    sw1 = digitalRead(20);
+    sw2 = digitalRead(21);
     if(wiringPiSPISetup(SPI_CHANNEL, SPI_SPEED) < 0) {
     printf("wiringPiSPISetup falló.\n");
     return(-1);
@@ -108,13 +110,17 @@ int main(int argc, char *argv[]) {
 	if(sockfd < 0)
 		error("Opening socket");
 
-	server.sin_family = AF_INET;		// symbol constant for Internet domain
-	server.sin_port = htons(3000);		// port number
-	server.sin_addr.s_addr = htonl(INADDR_ANY);	// para recibir de cualquier interfaz de red
+    //ingresar el puerto al momento de correr el programa y definir por defaulr el puerto 200
+
     addr.sin_family = AF_INET;		// symbol constant for Internet domain
 	addr.sin_port = htons(3000);		// port number
-	addr.sin_addr.s_addr = htonl(INADDR_ANY);	// para recibir de cualquier interfaz de red
-    length = sizeof(server);
+
+    server.sin_family = AF_INET;		// symbol constant for Internet domain
+	server.sin_port = htons(3000);		// port number
+	server.sin_addr.s_addr = htonl(INADDR_ANY);	// para recibir de cualquier interfaz de red
+
+
+    length = sizeof(addr);
 	// binds the socket to the address of the host and the port number
 	if(bind(sockfd, (struct sockaddr *)&server, sizeof(struct sockaddr)) < 0)
 		error("Error binding socket.");
@@ -122,8 +128,6 @@ int main(int argc, char *argv[]) {
 	// change socket permissions to allow broadcast
 	if(setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &boolval, sizeof(boolval)) < 0)
    		error("Error setting socket options\n");
-
-
     //instrucciones para ibtener la direccion IP automaticamente
     struct ifreq ifr;
     /* I want to get an IPv4 IP address */
@@ -135,26 +139,15 @@ int main(int argc, char *argv[]) {
 
     printf("La direccion IP es: %s\n", IP_adress);//imprime el valor de la IP detectado para verificar que sea correcto
     fflush(stdout);
-    strcpy(copia_IP,IP_adress);//se copia el valor de la IP en otra variable para poder trabajar con el
-    tok = strtok(copia_IP, "."); //se separa por puntos para poder construir la direccion del broadcast
-    save_ip = atoi(tok);
-    tok = strtok(NULL, ".");
-    save_ip1 = atoi(tok);
-    tok = strtok(NULL, ".");
-    save_ip2 = atoi(tok);
-    tok = strtok(NULL, ".");
-    save_ip3 = atoi(tok);
-    sprintf(broad_ip,"%d.%d.%d.255",save_ip, save_ip1, save_ip2);//se construye la direccion del broadcast
-    printf("Mi broadcast es: %s\n", broad_ip);//se imprime el valor construido para ver que sea correcto
-    fflush(stdout);
+
 
     //sem_init(&semapore,0,1);
     pthread_create(&thread2, NULL, (void*)&alarma, NULL); //funcion para crear el hilo
     pthread_create(&thread3, NULL, (void*)&ADC_read, NULL); //funcion para crear el hilo
     pthread_create(&thread4, NULL, (void*)&recibir, NULL); //funcion para crear el hilo
-    pthread_create(&thread4, NULL, (void*)&comp_adc, NULL); //funcion para crear el hilo
+    pthread_create(&thread5, NULL, (void*)&comp_adc, NULL); //funcion para crear el hilo
 
-    addr.sin_addr.s_addr = inet_addr("192.168.1.28");
+
 
     //estructura para adquirir la hora
 
@@ -162,24 +155,25 @@ int main(int argc, char *argv[]) {
     //printf("%d\n", evento);
     //printf("%d\n", c_mensajes);
     if (evento  == 0){
-    //sem_wait(&semapore);
     gettimeofday(&current_time, NULL);
-    hora = (float)current_time.tv_sec + (float)(current_time.tv_usec)/1000000;
-    adc =( (ADCvalue*3.3)/1023);
-    sprintf(reporte[c_mensajes],"%d,%d,%f,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,hora,b1,b2,sw1,sw2,val[1],val[0],adc);
-    //printf("No sucedio nada: %s\n",reporte[c_mensajes]);
+    adc =((ADCvalue*3.3)/1023);
+    //sem_wait(&semapore);
+   // // para recibir de cualquier interfaz de red
+    sprintf(reporte[c_mensajes],"%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,current_time.tv_sec,current_time.tv_usec,b1,b2,sw1,sw2,sw3,led[1],led[0],adc);
     c_mensajes++;
     //sem_post(&semapore);
     }
     for (int i = 0; i<c_mensajes ;i++){
+    addr.sin_addr.s_addr = inet_addr("192.168.1.28");
+    n = sendto(sockfd,reporte[i], sizeof(reporte[i]), 0, (struct sockaddr *)&addr,length); //se envia el mensaje
+    if(n < 0)
+        error("error 1 prueba");
     //printf("llegue a enviar\n");
-    n = sendto(sockfd,reporte[i], 100, 0, (struct sockaddr *)&addr,length); //se envia el mensaje
-        if(n < 0)
-            error("sendto");
-    printf("Hola: %s\n",reporte[i]);
+    printf("Se envio: %s",reporte[i]);
+    memset(reporte[i], 0,100);
     }
 
-    memset(reporte, 0,100);	// se limpia el buffer de entrada
+    // se limpia el buffer de entrada
     //printf("el reporte esta vacio: %s\n",reporte);
     c_mensajes =0;
     evento = 0;
@@ -197,9 +191,8 @@ void handlerb1 (void){
             b1=1;
             evento = 2;
             gettimeofday(&current_time, NULL);
-            hora = (current_time.tv_sec + (current_time.tv_usec/1000000));
             adc =( (ADCvalue*3.3)/1023);
-            sprintf(reporte[c_mensajes],"%d,%d,%f,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,hora,b1,b2,sw1,sw2,sw3,val[1],val[0],adc);
+            sprintf(reporte[c_mensajes],"%d,%d,%ld,%ld,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,current_time.tv_sec,current_time.tv_usec,b1,b2,sw1,sw2,sw3,led[1],led[0],adc);
             c_mensajes++;
             b1 = 0;
         }
@@ -214,9 +207,8 @@ void handlerb2 (void){
             b2 = 1;
             evento = 2;
             gettimeofday(&current_time, NULL);
-            hora = (current_time.tv_sec + (current_time.tv_usec/1000000));
             adc =( (ADCvalue*3.3)/1023);
-            sprintf(reporte[c_mensajes],"%d,%d,%f,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,hora,b1,b2,sw1,sw2,sw3,val[1],val[0],adc);
+            sprintf(reporte[c_mensajes],"%d,%d,%ld,%ld,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,current_time.tv_sec,current_time.tv_usec,b1,b2,sw1,sw2,sw3,led[1],led[0],adc);
             c_mensajes++;
             b2 = 0;
         }
@@ -231,9 +223,8 @@ void handlers1 (void){
     }
     evento = 1;
     gettimeofday(&current_time, NULL);
-    hora = (current_time.tv_sec + (current_time.tv_usec/1000000));
     adc =( (ADCvalue*3.3)/1023);
-    sprintf(reporte[c_mensajes],"%d,%d,%f,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,hora,b1,b2,sw1,sw2,sw3,val[1],val[0],adc);
+    sprintf(reporte[c_mensajes],"%d,%d,%ld,%ld,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,current_time.tv_sec,current_time.tv_usec,b1,b2,sw1,sw2,sw3,led[1],led[0],adc);
     c_mensajes++;
 }
 void handlers2 (void){
@@ -245,26 +236,30 @@ void handlers2 (void){
     }
     evento = 1;
     gettimeofday(&current_time, NULL);
-    hora = (current_time.tv_sec + (current_time.tv_usec/1000000));
     adc =( (ADCvalue*3.3)/1023);
-    sprintf(reporte[c_mensajes],"%d,%d,%f,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,hora,b1,b2,sw1,sw2,sw3,val[1],val[0],adc);
+            sprintf(reporte[c_mensajes],"%d,%d,%ld,%ld,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,current_time.tv_sec,current_time.tv_usec,b1,b2,sw1,sw2,sw3,led[1],led[0],adc);
     c_mensajes++;
 }
 void iot(void){
-    usleep(100000);
-    if (digitalRead (27) == 1){
-    sw3 = 1;
+    //sleep(1);
+    if (digitalRead (12) == 1){
+        debounce3 = 1;
     }else{
-        sw3 = 0;
+        if (debounce3 == 1){
+            debounce3 = 0;
+            evento = 3;
+            gettimeofday(&current_time, NULL);
+            adc =((ADCvalue*3.3)/1023);
+            sprintf(reporte[c_mensajes],"%d,%d,%ld,%ld,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,current_time.tv_sec,current_time.tv_usec,b1,b2,sw1,sw2,sw3,led[1],led[0],adc);
+            c_mensajes++;
+            fflush(stdout);
+            if (sw3 == 0){
+                sw3 = 1;
+            }else{
+                sw3 = 0;
+            }
+        }
     }
-    evento = 3;
-    gettimeofday(&current_time, NULL);
-    hora = (current_time.tv_sec + (current_time.tv_usec/1000000));
-    adc =( (ADCvalue*3.3)/1023);
-    sprintf(reporte[c_mensajes],"%d,%d,%f,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,hora,b1,b2,sw1,sw2,sw3,val[1],val[0],adc);
-    c_mensajes++;
-    printf("ando aca \n");
-    fflush(stdout);
 }
 uint16_t get_ADC(int ADC_chan){
 uint8_t spiData[2]; // La comunicación usa dos bytes
@@ -289,17 +284,18 @@ void alarma (void *ptr){
     struct sched_param param;//se declara la prioridad del hilo
 		param.sched_priority = 1;
         sched_setscheduler(0, SCHED_FIFO, &param);
-        */
-    float adc = 0;
+    */
     while (1){
         if ((ADCvalue >= 155) && (ADCvalue<=775)){
             PWM_off(18);
+            //digitalWrite(18,HIGH);
         }else{
             PWM(18,0.11944575,0.11944575);
         }
     }
 }
 void PWM (int pin, float del_alto, float del_bajo){ //funcion para hacer un PWM
+    int var = 0;
 	switch(var){
 		case 0:
 			digitalWrite(pin,HIGH);
@@ -321,7 +317,7 @@ void ADC_read (void *ptr){
     struct sched_param param;//se declara la prioridad del hilo
 		param.sched_priority = 1;
         sched_setscheduler(0, SCHED_FIFO, &param);
-        */
+    */
     while (1){
         ADCvalue = get_ADC(ADC_CHANNEL);
         usleep(10000);
@@ -330,66 +326,54 @@ void ADC_read (void *ptr){
 void recibir (void *ptr){
     /*
     struct sched_param param;//se declara la prioridad del hilo
-		param.sched_priority = 1;
+        param.sched_priority = 1;
         sched_setscheduler(0, SCHED_FIFO, &param);
         */
-    char* toks;
     while (1){
     memset(buffer, 0,MSG_SIZE);	// se limpia el buffer de entrada
-		// receive from a client
+        // receive from a client
     n = recvfrom(sockfd, buffer, MSG_SIZE, 0, (struct sockaddr *)&addr, &length);
     if(n < 0)
         error("recvfrom");
     if (buffer != NULL){
         printf("Se recibio lo siguiente: %s\n", buffer);//se imprime lo que se recibio para ver si es correcto
         fflush(stdout);
-        toks = strtok(buffer, "."); //la variable que contiene la IP recibida la separa por puntos          //para acceder al ultimo numero de la IP y usarlo en el desempate
-        val[0] = atoi(toks);
+        toks = strtok(buffer, ".");
+        led[0] = atoi(toks);
         toks = strtok(NULL, ".");
-        toks = strtok(NULL, ".");
-        val[1] = atoi(toks);
-        if (val[0] == 1){
-            if (val[1] == 1){
-                digitalWrite(5, HIGH);
-                digitalWrite(6, LOW);
-            }else if (val[1] == 2){
-                digitalWrite(6, HIGH);
-                digitalWrite(5, LOW);
-            }else if (val[1] == 3){
-                digitalWrite(5, HIGH);
-                digitalWrite(6, HIGH);
-            }else{
-                digitalWrite(5, LOW);
-                digitalWrite(6, LOW);
+        led[1] = atoi(toks);
+        digitalWrite(5, led[0]);
+        digitalWrite(6, led[1]);
+        gettimeofday(&current_time, NULL);
+        adc =((ADCvalue*3.3)/1023);
+        //sem_wait(&semapore);
+        evento = 4;
+        sprintf(reporte[c_mensajes],"%d,%d,%ld,%ld,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,current_time.tv_sec,current_time.tv_usec,b1,b2,sw1,sw2,sw3,led[1],led[0],adc);
+        c_mensajes++;
+        //sem_post(&semapore);
+
         }
     }
-    //sem_wait(&semapore);
-    evento = 4;
-    gettimeofday(&current_time, NULL);
-    hora = (current_time.tv_sec + (current_time.tv_usec/1000000));
-    adc =( (ADCvalue*3.3)/1023);
-    sprintf(reporte[c_mensajes],"%d,%d,%f,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,hora,b1,b2,sw1,sw2,sw3,val[1],val[0],adc);
-    c_mensajes++;
-    //sem_post(&semapore);
-    }
-}
 }
 void comp_adc(void *ptr){
     /*
     struct sched_param param;//se declara la prioridad del hilo
 		param.sched_priority = 1;
         sched_setscheduler(0, SCHED_FIFO, &param);
-        */
+       */
+
+    int ADC_warning= 0;
+    int ADC_good=0;
     while(1){
         if ((ADCvalue >= 155) && (ADCvalue<=775)){
             ADC_good =1;
             if (ADC_warning == 1){
-           // sem_wait(&semapore);
-            evento = 6;
+
             gettimeofday(&current_time, NULL);
-            hora = (current_time.tv_sec + (current_time.tv_usec/1000000));
             adc =( (ADCvalue*3.3)/1023);
-            sprintf(reporte[c_mensajes],"%d,%d,%f,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,hora,b1,b2,sw1,sw2,sw3,val[1],val[0],adc);
+            //sem_wait(&semapore);
+            evento = 6;
+            sprintf(reporte[c_mensajes],"%d,%d,%ld,%ld,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,current_time.tv_sec,current_time.tv_usec,b1,b2,sw1,sw2,sw3,led[1],led[0],adc);
             c_mensajes++;
             //sem_post(&semapore);
             ADC_warning = 0;
@@ -397,12 +381,12 @@ void comp_adc(void *ptr){
         }else{
             ADC_warning = 1;
             if (ADC_good ==1){
+
+            gettimeofday(&current_time, NULL);
+            adc =( (ADCvalue*3.3)/1023);
             //sem_wait(&semapore);
             evento = 5;
-            gettimeofday(&current_time, NULL);
-            hora = (current_time.tv_sec + (current_time.tv_usec/1000000));
-            adc =( (ADCvalue*3.3)/1023);
-            sprintf(reporte[c_mensajes],"%d,%d,%f,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,hora,b1,b2,sw1,sw2,sw3,val[1],val[0],adc);
+            sprintf(reporte[c_mensajes],"%d,%d,%ld,%ld,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,current_time.tv_sec,current_time.tv_usec,b1,b2,sw1,sw2,sw3,led[1],led[0],adc);
             c_mensajes++;
             //sem_wait(&semapore);
             ADC_good = 0;
