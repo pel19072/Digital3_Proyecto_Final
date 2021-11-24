@@ -30,7 +30,7 @@
 #define BLYNK_PRINT Serial
 
 /* Fill-in your Template ID (only if using Blynk.Cloud) */
-//#define BLYNK_TEMPLATE_ID   "8f81bXH7dQDvsG9CVRmniRzZgG9Wumma"
+//#define BLYNK_TEMPLATE_ID   "exh7B8ACSPfpESzVMad36SYCaGgkJgBB"
 
 
 #include <SPI.h>
@@ -39,7 +39,7 @@
 
 // You should get Auth Token in the Blynk App.
 // Go to the Project Settings (nut icon).
-char auth[] = "8f81bXH7dQDvsG9CVRmniRzZgG9Wumma";
+char auth[] = "exh7B8ACSPfpESzVMad36SYCaGgkJgBB";
 
 // Your WiFi credentials.
 // Set password to "" for open networks.

@@ -36,6 +36,8 @@ adc = [0.0, 0.0]
 hora_tmp = ['','']
 buffer_tmp = [[''],['']]
 
+buffer_terminal = []
+
 
 try:
     os.mkfifo(FIFO)
@@ -59,6 +61,7 @@ class APP (QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_2.clicked.connect(self.presionado2)
         self.pushButton_3.clicked.connect(self.presionado3)
         self.pushButton_4.clicked.connect(self.presionado4)
+        self.pushButton_5.clicked.connect(self.despliegue)
 
         rx_hist = threading.Thread(daemon=True,target=PIPES_RX)
         rx_hist.start()
@@ -138,14 +141,19 @@ class APP (QtWidgets.QMainWindow, Ui_MainWindow):
             leds_tx[1][0] = '1'
 
     def presionado4(self):
-        global leds_tx
+        global leds_tx, buffer_terminal
         if int(leds_tx[1][1]):
             leds_tx[1][1] = '0'
         else:
             leds_tx[1][1] = '1'
 
+    def despliegue(self):
+        global buffer_terminal
+        for i in buffer_terminal:
+            print(i)
+
 def PIPES_RX():
-    global ventanamain, mensaje, RTU, evento, hora, botones, switches, leds, adc
+    global ventanamain, mensaje, RTU, evento, hora, botones, switches, leds, adc, buffer_tmp, buffer_terminal
     print("#RTU | #EVENTO |           TIME STAMP           |   ESTATUS   | VOLTAJE")
     with open(FIFO, "rb") as fifo:
         print("FIFO opened")
@@ -169,8 +177,9 @@ def PIPES_RX():
                     leds[RTU][0] = display[9]
                     leds[RTU][1] = display[10]
                     adc[RTU] = display[11]
+                    buffer_terminal.append("  {}  |    {}    | {} | {};{};{};{};{};{} | {} ".format(RTU+1, evento[RTU], hora[RTU], botones[RTU][0], botones[RTU][1], switches[RTU][0], switches[RTU][1], leds[RTU][0], leds[RTU][1], adc[RTU]))
                     buffer_tmp[RTU].append("EVENTO: {} | BOTONES: {};{} | HORA: {}.".format(evento[RTU], botones[RTU][0], botones[RTU][1], hora[RTU]))
-                    print("  {}  |    {}    | {} | {};{};{};{};{};{} | {} ".format(RTU+1, evento[RTU], hora[RTU], botones[RTU][0], botones[RTU][1], switches[RTU][0], switches[RTU][1], leds[RTU][0], leds[RTU][1], adc[RTU]))
+                    #print("  {}  |    {}    | {} | {};{};{};{};{};{} | {} ".format(RTU+1, evento[RTU], hora[RTU], botones[RTU][0], botones[RTU][1], switches[RTU][0], switches[RTU][1], leds[RTU][0], leds[RTU][1], adc[RTU]))
                     mensaje = ''
             except:
                 pass

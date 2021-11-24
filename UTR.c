@@ -42,7 +42,7 @@ float adc = 0;
 char* toks;
 int led[3];
 int c_mensajes = 0;
-int UTR_identifier = 1;
+int UTR_identifier = 2;
 uint16_t ADCvalue;
 unsigned int length;
 int sockfd, n= 0;
@@ -356,7 +356,7 @@ void recibir (void *ptr){
         temp_led[1] = atoi(toks);
         toks = strtok(NULL, ".");
         temp_led[2] = atoi(toks);
-        if (temp_led[2] == 1){
+        if (temp_led[2] == 2){
             led[0] = temp_led[0];
             led[1] = temp_led[1];
             digitalWrite(5, led[1]);
