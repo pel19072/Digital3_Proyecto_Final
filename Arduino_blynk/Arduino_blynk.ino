@@ -46,40 +46,54 @@ char auth[] = "8f81bXH7dQDvsG9CVRmniRzZgG9Wumma";
 char ssid[] = "Pellecer";
 char pass[] = "PellecerOApto4";
 
-char estado =0;
+char estado[100];
 int state = 0;
+WidgetTerminal terminal(V5);
 BLYNK_WRITE(V0){
   int V0data = param.asInt();
   digitalWrite(10, V0data);
 }
-BLYNK_READ(V5) // Widget in the app READs Virtal Pin V5 with the certain frequency
+BLYNK_WRITE(V5) // Widget in the app READs Virtal Pin V5 with the certain frequency
 {
-   if (Serial.available() > 0){
-  estado = Serial.read();
-  Serial.print(estado);
-  }
-  if (estado == 49){
-    state = 1;
-  }else if (estado == 50){
-    state = 2;
-  }
+   
   // This command writes Arduino's uptime in seconds to Virtual Pin V5
-  Blynk.virtualWrite(5, state);
+  //Blynk.virtualWrite(5, estado);
+  //terminal.write(estado);
+  //terminal.flush();
 }
 void setup()
 {
   pinMode(10, OUTPUT);
   // Debug console
   Serial.begin(9600);
-
+  Serial1.begin(9600);
   Blynk.begin(auth, ssid, pass);
   // You can also specify server:
   //Blynk.begin(auth, ssid, pass, "blynk-cloud.com", 80);
   //Blynk.begin(auth, ssid, pass, IPAddress(192,168,1,100), 8080);
+
+
+  // Clear the terminal content
+  terminal.clear();
+
+  // This will print Blynk Software version to the Terminal Widget when
+  // your hardware gets connected to Blynk Server
+  terminal.println(F("Blynk v" BLYNK_VERSION ": Device started"));
+  terminal.println(F("-------------"));
+  terminal.println(F("Type 'Marco' and get a reply, or type"));
+  terminal.println(F("anything else and get it printed back."));
+  terminal.flush();
 }
 
 void loop()
 {
- 
   Blynk.run();
+  if (Serial1.available() > 0){
+  Serial1.readBytesUntil(10, estado, 41);
+  Serial.println(estado);
+  terminal.println(estado);
+  terminal.flush();
+  memset(estado,0,100);
+  }
+  //delay(2000);
 }

@@ -21,7 +21,8 @@
 #include <time.h>
 #include <sys/time.h>
 #include <semaphore.h>
-
+#include <wiringSerial.h>
+#include <errno.h>
 #define SPI_CHANNEL      0 // Canal SPI de la Raspberry Pi, 0 ó 1
 #define SPI_SPEED  1500000 // Velocidad de la comunicación SPI (reloj, en HZ)
                             // Máxima de 3.6 MHz con VDD = 5V, 1.2 MHz con VDD = 2.7V
@@ -39,7 +40,7 @@ int sw3 = 0;
 int evento = 0;
 float adc = 0;
 char* toks;
-int led[2];
+int led[3];
 int c_mensajes = 0;
 int UTR_identifier = 1;
 uint16_t ADCvalue;
@@ -140,6 +141,11 @@ int main(int argc, char *argv[]) {
     printf("La direccion IP es: %s\n", IP_adress);//imprime el valor de la IP detectado para verificar que sea correcto
     fflush(stdout);
 
+    //configuracion UART
+    int fd;
+    if ((fd = serialOpen("/dev/ttyS0",9600))<0){
+        printf("no se pudo abrir el puerto serial %s\n",strerror(errno));
+    }
 
     //sem_init(&semapore,0,1);
     pthread_create(&thread2, NULL, (void*)&alarma, NULL); //funcion para crear el hilo
@@ -170,6 +176,7 @@ int main(int argc, char *argv[]) {
         error("error 1 prueba");
     //printf("llegue a enviar\n");
     printf("Se envio: %s",reporte[i]);
+    serialPuts(fd, reporte[i]);
     memset(reporte[i], 0,100);
     }
 
@@ -179,6 +186,8 @@ int main(int argc, char *argv[]) {
     evento = 0;
     sleep(2);
     }
+
+    serialClose(fd);
 	return(0);
 }
 //**********************funciones*******************************************
@@ -287,10 +296,11 @@ void alarma (void *ptr){
     */
     while (1){
         if ((ADCvalue >= 155) && (ADCvalue<=775)){
-            PWM_off(18);
+            digitalWrite(18, HIGH);
+            //PWM(18,0.11944575,0.11944575);
             //digitalWrite(18,HIGH);
         }else{
-            PWM(18,0.11944575,0.11944575);
+            PWM_off(18);
         }
     }
 }
@@ -324,6 +334,8 @@ void ADC_read (void *ptr){
     }
 }
 void recibir (void *ptr){
+    int temp_led[3];
+    int temp1_led[3];
     /*
     struct sched_param param;//se declara la prioridad del hilo
         param.sched_priority = 1;
@@ -335,25 +347,34 @@ void recibir (void *ptr){
     n = recvfrom(sockfd, buffer, MSG_SIZE, 0, (struct sockaddr *)&addr, &length);
     if(n < 0)
         error("recvfrom");
-    if (buffer != NULL){
+    if (buffer != NULL ){
         printf("Se recibio lo siguiente: %s\n", buffer);//se imprime lo que se recibio para ver si es correcto
         fflush(stdout);
         toks = strtok(buffer, ".");
-        led[0] = atoi(toks);
+        temp_led[0] = atoi(toks);
         toks = strtok(NULL, ".");
-        led[1] = atoi(toks);
-        digitalWrite(5, led[0]);
-        digitalWrite(6, led[1]);
-        gettimeofday(&current_time, NULL);
-        adc =((ADCvalue*3.3)/1023);
-        //sem_wait(&semapore);
-        evento = 4;
-        sprintf(reporte[c_mensajes],"%d,%d,%ld,%ld,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,current_time.tv_sec,current_time.tv_usec,b1,b2,sw1,sw2,sw3,led[1],led[0],adc);
-        c_mensajes++;
+        temp_led[1] = atoi(toks);
+        toks = strtok(NULL, ".");
+        temp_led[2] = atoi(toks);
+        if (temp_led[2] == 1){
+            led[0] = temp_led[0];
+            led[1] = temp_led[1];
+            digitalWrite(5, led[1]);
+            digitalWrite(6, led[0]);
+            if (temp1_led[0] != led[0] || temp1_led[1] != led[1] ){
+            temp1_led[0] = temp_led[0];
+            temp1_led[1] = temp_led[1];
+            gettimeofday(&current_time, NULL);
+            adc =((ADCvalue*3.3)/1023);
+            //sem_wait(&semapore);
+            evento = 4;
+            sprintf(reporte[c_mensajes],"%d,%d,%ld,%ld,%d,%d,%d,%d,%d,%d,%d,%.2f\n",UTR_identifier,evento,current_time.tv_sec,current_time.tv_usec,b1,b2,sw1,sw2,sw3,led[1],led[0],adc);
+            c_mensajes++;
         //sem_post(&semapore);
-
+            }
         }
     }
+}
 }
 void comp_adc(void *ptr){
     /*
