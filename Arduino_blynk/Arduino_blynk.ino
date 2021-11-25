@@ -43,8 +43,14 @@ char auth[] = "exh7B8ACSPfpESzVMad36SYCaGgkJgBB";
 
 // Your WiFi credentials.
 // Set password to "" for open networks.
+
+/*
 char ssid[] = "Pellecer";
 char pass[] = "PellecerOApto4";
+*/
+
+char ssid[] = "UVG";
+char pass[] = "";
 
 char estado[100];
 int state = 0;

@@ -170,7 +170,7 @@ int main(int argc, char *argv[]) {
     //sem_post(&semapore);
     }
     for (int i = 0; i<c_mensajes ;i++){
-    addr.sin_addr.s_addr = inet_addr("192.168.1.28");
+    addr.sin_addr.s_addr = inet_addr("10.0.0.23"); //inet_addr("192.168.1.28");
     n = sendto(sockfd,reporte[i], sizeof(reporte[i]), 0, (struct sockaddr *)&addr,length); //se envia el mensaje
     if(n < 0)
         error("error 1 prueba");
