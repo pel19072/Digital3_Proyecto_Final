@@ -106,7 +106,11 @@ int main(int argc, char *argv[]) {
     printf("wiringPiSPISetup falló.\n");
     return(-1);
     }
-
+    if(argc != 2)
+	{
+		printf("usage: %s port\n", argv[0]);
+		exit(0);
+	}
 	sockfd = socket(AF_INET, SOCK_DGRAM, 0); // Creates socket. Connectionless.
 	if(sockfd < 0)
 		error("Opening socket");
@@ -114,10 +118,10 @@ int main(int argc, char *argv[]) {
     //ingresar el puerto al momento de correr el programa y definir por defaulr el puerto 200
 
     addr.sin_family = AF_INET;		// symbol constant for Internet domain
-	addr.sin_port = htons(3000);		// port number
+	addr.sin_port = htons(atoi(argv[1]));		// port number
 
     server.sin_family = AF_INET;		// symbol constant for Internet domain
-	server.sin_port = htons(3000);		// port number
+	server.sin_port = htons(atoi(argv[1]));		// port number
 	server.sin_addr.s_addr = htonl(INADDR_ANY);	// para recibir de cualquier interfaz de red
 
 
@@ -170,7 +174,7 @@ int main(int argc, char *argv[]) {
     //sem_post(&semapore);
     }
     for (int i = 0; i<c_mensajes ;i++){
-    addr.sin_addr.s_addr = inet_addr("192.168.1.28");
+    addr.sin_addr.s_addr = inet_addr("10.0.0.23");
     n = sendto(sockfd,reporte[i], sizeof(reporte[i]), 0, (struct sockaddr *)&addr,length); //se envia el mensaje
     if(n < 0)
         error("error 1 prueba");
