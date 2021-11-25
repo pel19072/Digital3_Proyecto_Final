@@ -1,6 +1,6 @@
 /*    Nombre     : 	Historiador.c
-      Autor      : 	Ricardo Pellecer Orellana
-      Carné      :  19072
+      Autor      : 	Carlos René Gil y Ricardo Pellecer Orellana
+      Carné      :  19443 y 19072
       Curso      :  Electrónica Digital 3
       Descripción: 	Programa para el historiador del sistema SCADA
 */
