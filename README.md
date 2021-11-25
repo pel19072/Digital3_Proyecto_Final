@@ -1,2 +1,26 @@
 # Digital3_Proyecto_Final
 SCADA System
+-Compilación
+  -Historiador
+    -Historiador.c
+      -Debe compilarse con la librería pthread
+      -Ejemplo: gcc Historiador.c -o Historiador -lpthread
+      -Debe correrse con un argumento que dice el puerto a usar para la comunicación UDP
+      -Ejemplo: ./Historiador 3000
+    -Historiador_GUI.py
+      -Debe correrse con python3
+      -Ejemplo: python3 Historiador_GUI.py
+      -El programa solamente funciona en sistemas operativos basados en Linux, pues hace uso de named pipes
+      -Dependencias
+        -Asegurarse de tener los siguientes módulos de Python instalados
+          -PyQt5
+          -pyqtgraph
+            -Qt mayor a 5.12
+            -numpy
+        -Asegurarse que los siguientes archivos (que también están en este repositorio) se descarguen en la misma carpeta
+          -Interfaz.py (Contiene la interfaz gráfica)
+          -Style.py (Contiene el qss para darle estilo a la interfaz)
+  -RTUs
+-Conexión
+  -Historiador
+  -RTUs
