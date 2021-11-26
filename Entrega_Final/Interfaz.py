@@ -12,7 +12,6 @@ from pyqtgraph import PlotWidget
 from pyqtgraph.Qt import QtCore
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -30,7 +29,6 @@ class Ui_MainWindow(object):
         self.label.setObjectName("label")
         self.gridLayout_4.addWidget(self.label, 0, 1, 1, 1)
         self.widget = pg.GraphicsLayoutWidget(self.centralwidget, show=True, title = "ADC")
-        #self.widget = PlotWidget(self.centralwidget)
         self.widget.setStyleSheet("background-color: rgb(0, 0, 0);")
         self.widget.setObjectName("widget")
         self.gridLayout_4.addWidget(self.widget, 3, 1, 1, 1)
@@ -225,8 +223,6 @@ class Ui_MainWindow(object):
         self.label_10.setText(_translate("MainWindow", "NOTIFICACIONES"))
         self.label_16.setText(_translate("MainWindow", "IoT"))
         self.pushButton_5.setText(_translate("MainWindow", "DESPLEGAR INFORMACIÓN"))
-#from plotwidget import PlotWidget
-
 
 if __name__ == "__main__":
     import sys
