@@ -1,15 +1,17 @@
 # Digital3_Proyecto_Final
-SCADA System
+## SCADA System
 - Compilación
   - Historiador
+  - Habilitar el protocolo NTP para que las horas de los RTUs estén sincronizadas
     - Historiador.c
       - Debe compilarse con la librería pthread
-      - Ejemplo: gcc Historiador.c -o Historiador -lpthread
+      - Ejemplo: `gcc Historiador.c -o Historiador -lpthread`
       - Debe correrse con un argumento que dice el puerto a usar para la comunicación UDP
-      - Ejemplo: ./Historiador 3000
+      - Ejemplo: `./Historiador 3000`
+      - El código tiene introducida la IP de los RTUs de forma manual, por lo que al cambiar de red debería de cambiarse el código manualmente para que funcione
     - Historiador_GUI.py
       - Debe correrse con python3
-      - Ejemplo: python3 Historiador_GUI.py
+      - Ejemplo: `python3 Historiador_GUI.py`
       - El programa solamente funciona en sistemas operativos basados en Linux, pues hace uso de named pipes
       - Dependencias
         - Asegurarse de tener los siguientes módulos de Python instalados
@@ -21,6 +23,51 @@ SCADA System
           - Interfaz.py (Contiene la interfaz gráfica)
           - Style.py (Contiene el qss para darle estilo a la interfaz)
   - RTUs
+    - Habilitar el protocolo NTP para que las horas de los RTUs estén sincronizadas
+    - Habilitar el puerto serial para poder usar la comunicación con el módulo IoT descrita abajo
+    - UTR.c
+      - Debe compilarse con las librerías pthread y wiringPi
+      - Ejemplo: `gcc UTR.c -o UTR -lpthread -lwiringPi`
+      - Debe correrse con un argumento que dice el puerto a usar para la comunicación UDP
+      - Ejemplo: `./UTR 3000`
+      - El código tiene introducida la IP del Historiador de forma manual, por lo que al cambiar de red debería de cambiarse el código manualmente para que funcione
+      - El código tiene el identificador de RTU de forma manual, por lo que según el RTU que se esté usando debería de modificarse de forma manual
+        - Cambiar la línea 58: `int UTR_identifier = 1;` (colocar el número de identificador)
+        - Cambiar la línea 333: `if (temp_led[2] == 2);` (colocar el número del identificador en el lado derecho de la comparación)
+  - Módulo IoT
+    - Debe revisarse que el IDE de Arduino tenga una versión lo suficientemente nuevo para que reconozca al Arduino Nano 33 IoT
+    - Es necesario descargar e instalar la librería de Blynk en el IDE de Arduino
+    - Es necesario descargar la aplicación de Blynk en el teléfono a usar
+      - Se crea un nuevo proyecto
+      - Se selecciona la placa a usar (Arduino Nano en este caso)
+      - Al crear el proyecto se manda un Token de seguridad del proyecto, el cual debe de ser introducido en el código del Arduino en la línea 56: `char auth[] = "TOKEN";`
+      - Seleccionar los Widgets
+        - Un Widget de botón en el pin virtual 0 y configurado como botón
+        - Un Widget de terminal en el pin virtual 5
 - Conexión
+  - Tanto el Historiador como los RTUs tienen que estar conectados a la misma red y utilizar el mismo puerto
   - Historiador
+    - Un monitor debe de conectarse a la Raspberry antes de encenderla para que esta lo reconozca
   - RTUs
+    - Botones
+      - Boton 1 en el GPIO19
+      - Boton 2 en el GPIO26
+    - Integrado MCP3002
+      - Pin de Data In en el GPIO10
+      - Pin de Data Out en el GPIO9
+      - Pin de Clock en el GPIO11
+      - Pin de Chip Select en el GPIO8
+      - Pin de Canal en la terminal central del potenciómetro
+    - Interruptores
+      - Interruptor 1 en el GPIO20
+      - Interruptor 2 en el GPIO21
+    - IoT
+      - Pin para evento en el GPIO12
+      - Serial en el GPIO14
+    - LEDs   
+      - LED 1 en el GPIO5
+      - LED 2 en el GPIO6
+  - Arduino Nano 33 IoT
+    - Pin para evento en D10
+    - Serial en D0/RX
+    - Es necesario que la tierra de este módulo y del RTU al que esté conectado esten puenteadas
